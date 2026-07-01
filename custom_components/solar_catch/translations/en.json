@@ -1,0 +1,40 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Solar Catch setup",
+        "description": "Select the excess-power sensor and the appliance switch, then set the basic control values.",
+        "data": {
+          "power_entity": "Excess power sensor",
+          "appliance_switch": "Appliance switch",
+          "appliance_power_w": "Appliance power draw",
+          "start_threshold_w": "Start power threshold",
+          "above_threshold_seconds": "Above threshold time",
+          "below_threshold_seconds": "Below threshold time",
+          "min_runtime_minutes": "Minimum daily runtime",
+          "start_time": "Start time",
+          "end_time": "End time"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Solar Catch options",
+        "description": "Update the Solar Catch controller settings.",
+        "data": {
+          "power_entity": "Excess power sensor",
+          "appliance_switch": "Appliance switch",
+          "appliance_power_w": "Appliance power draw",
+          "start_threshold_w": "Start power threshold",
+          "above_threshold_seconds": "Above threshold time",
+          "below_threshold_seconds": "Below threshold time",
+          "min_runtime_minutes": "Minimum daily runtime",
+          "start_time": "Start time",
+          "end_time": "End time"
+        }
+      }
+    }
+  }
+}
