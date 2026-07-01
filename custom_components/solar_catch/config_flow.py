@@ -68,14 +68,11 @@ class SolarCatchConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     def async_get_options_flow(config_entry: config_entries.ConfigEntry):
-        return SolarCatchOptionsFlow(config_entry)
+        return SolarCatchOptionsFlow()
 
 
 class SolarCatchOptionsFlow(config_entries.OptionsFlow):
     """Options flow for Solar Catch."""
-
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        self.config_entry = config_entry
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         if user_input is not None:
