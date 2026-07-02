@@ -19,11 +19,11 @@ from .coordinator import SolarCatchCoordinator
 
 
 NUMBER_DESCRIPTIONS = [
-    (CONF_APPLIANCE_POWER_W, "Appliance power draw", UnitOfPower.WATT, 0, 20000, 50),
-    (CONF_START_THRESHOLD_W, "Start power threshold", UnitOfPower.WATT, -10000, 20000, 50),
-    (CONF_ABOVE_THRESHOLD_SECONDS, "Above threshold time", "s", 0, 3600, 10),
-    (CONF_BELOW_THRESHOLD_SECONDS, "Below threshold time", "s", 0, 3600, 10),
-    (CONF_MIN_RUNTIME_MINUTES, "Minimum daily runtime", UnitOfTime.MINUTES, 0, 720, 5),
+    (CONF_APPLIANCE_POWER_W, "Fallback draw", UnitOfPower.WATT, 0, 20000, 50),
+    (CONF_START_THRESHOLD_W, "Start threshold", UnitOfPower.WATT, -10000, 20000, 50),
+    (CONF_ABOVE_THRESHOLD_SECONDS, "Above time", "s", 0, 3600, 10),
+    (CONF_BELOW_THRESHOLD_SECONDS, "Below time", "s", 0, 3600, 10),
+    (CONF_MIN_RUNTIME_MINUTES, "Min runtime", UnitOfTime.MINUTES, 0, 720, 5),
 ]
 
 

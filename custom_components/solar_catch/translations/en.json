@@ -7,13 +7,19 @@
         "data": {
           "power_entity": "Excess power sensor",
           "appliance_switch": "Appliance switch",
-          "appliance_power_w": "Appliance power draw",
+          "appliance_power_entity": "Appliance power sensor (optional)",
+          "appliance_power_w": "Fallback appliance draw",
           "start_threshold_w": "Start power threshold",
           "above_threshold_seconds": "Above threshold time",
           "below_threshold_seconds": "Below threshold time",
           "min_runtime_minutes": "Minimum daily runtime",
           "start_time": "Start time",
           "end_time": "End time"
+        },
+        "data_description": {
+          "power_entity": "Must read positive when exporting/excess power is available, and negative when importing. Create an inverted template sensor if your meter is the opposite sign.",
+          "appliance_power_entity": "Optional live power draw sensor for the controlled appliance. If supplied, Solar Catch uses this instead of the fixed fallback draw while the appliance is on.",
+          "appliance_power_w": "Used only when no live appliance power sensor is selected, or if that sensor is unavailable."
         }
       }
     }
@@ -26,13 +32,19 @@
         "data": {
           "power_entity": "Excess power sensor",
           "appliance_switch": "Appliance switch",
-          "appliance_power_w": "Appliance power draw",
+          "appliance_power_entity": "Appliance power sensor (optional)",
+          "appliance_power_w": "Fallback appliance draw",
           "start_threshold_w": "Start power threshold",
           "above_threshold_seconds": "Above threshold time",
           "below_threshold_seconds": "Below threshold time",
           "min_runtime_minutes": "Minimum daily runtime",
           "start_time": "Start time",
           "end_time": "End time"
+        },
+        "data_description": {
+          "power_entity": "Must read positive when exporting/excess power is available, and negative when importing. Create an inverted template sensor if your meter is the opposite sign.",
+          "appliance_power_entity": "Optional live power draw sensor for the controlled appliance. If supplied, Solar Catch uses this instead of the fixed fallback draw while the appliance is on.",
+          "appliance_power_w": "Used only when no live appliance power sensor is selected, or if that sensor is unavailable."
         }
       }
     }

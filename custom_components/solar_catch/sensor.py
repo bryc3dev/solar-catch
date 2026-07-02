@@ -21,6 +21,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             SolarCatchRemainingRuntimeSensor(coordinator, entry),
             SolarCatchRawPowerSensor(coordinator, entry),
             SolarCatchDecisionPowerSensor(coordinator, entry),
+            SolarCatchAppliancePowerSensor(coordinator, entry),
             SolarCatchAboveForSensor(coordinator, entry),
             SolarCatchBelowForSensor(coordinator, entry),
             SolarCatchLatestStartSensor(coordinator, entry),
@@ -109,6 +110,22 @@ class SolarCatchDecisionPowerSensor(SolarCatchBaseSensor):
     @property
     def native_value(self):
         value = self.coordinator.data.decision_power_w
+        return None if value is None else round(value, 0)
+
+
+
+
+class SolarCatchAppliancePowerSensor(SolarCatchBaseSensor):
+    _attr_native_unit_of_measurement = UnitOfPower.WATT
+    _attr_device_class = SensorDeviceClass.POWER
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(self, coordinator, entry):
+        super().__init__(coordinator, entry, "appliance_power", "Appliance draw")
+
+    @property
+    def native_value(self):
+        value = self.coordinator.data.appliance_power_w
         return None if value is None else round(value, 0)
 
 

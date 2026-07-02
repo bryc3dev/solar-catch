@@ -13,6 +13,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import (
     CONF_ABOVE_THRESHOLD_SECONDS,
+    CONF_APPLIANCE_POWER_ENTITY,
     CONF_APPLIANCE_POWER_W,
     CONF_APPLIANCE_SWITCH,
     CONF_BELOW_THRESHOLD_SECONDS,
@@ -39,6 +40,7 @@ class SolarCatchState:
     mode: str = "startup"
     raw_power_w: float | None = None
     decision_power_w: float | None = None
+    appliance_power_w: float | None = None
     runtime_today_min: float = 0.0
     remaining_runtime_min: float = 0.0
     latest_start_time: str | None = None
@@ -144,11 +146,18 @@ class SolarCatchCoordinator(DataUpdateCoordinator[SolarCatchState]):
 
         enabled = bool(self.get_setting(CONF_ENABLED))
         appliance_on = self._switch_is_on()
-        if appliance_on:
-            self._runtime_today += delta
 
         raw_power = self._read_power_w(self.get_setting(CONF_POWER_ENTITY))
-        appliance_power = float(self.get_setting(CONF_APPLIANCE_POWER_W) or 0)
+        measured_appliance_power = self._read_power_w(self.get_setting(CONF_APPLIANCE_POWER_ENTITY))
+        fallback_appliance_power = float(self.get_setting(CONF_APPLIANCE_POWER_W) or 0)
+        appliance_power = measured_appliance_power if measured_appliance_power is not None else fallback_appliance_power
+
+        # Runtime is counted while the controlled switch is on. If a live appliance
+        # power sensor is mapped, only count active draw so thermostat cycling or
+        # variable-load behaviour does not over-count useful runtime.
+        if appliance_on and (measured_appliance_power is None or measured_appliance_power > 50):
+            self._runtime_today += delta
+
         threshold = float(self.get_setting(CONF_START_THRESHOLD_W) or 0)
         above_seconds = int(self.get_setting(CONF_ABOVE_THRESHOLD_SECONDS) or 0)
         below_seconds = int(self.get_setting(CONF_BELOW_THRESHOLD_SECONDS) or 0)
@@ -179,12 +188,22 @@ class SolarCatchCoordinator(DataUpdateCoordinator[SolarCatchState]):
             status = "Power sensor unavailable"
             mode = "sensor_unavailable"
         else:
-            if decision_power >= threshold:
-                self._above_since = self._above_since or now
-                self._below_since = None
+            # Above-threshold timing is used to start the appliance while off.
+            # Below-threshold timing is only meaningful once the appliance is on;
+            # otherwise it just counts forever while waiting and clutters the UI.
+            if appliance_on:
+                if decision_power >= threshold:
+                    self._above_since = self._above_since or now
+                    self._below_since = None
+                else:
+                    self._below_since = self._below_since or now
+                    self._above_since = None
             else:
-                self._below_since = self._below_since or now
-                self._above_since = None
+                self._below_since = None
+                if decision_power >= threshold:
+                    self._above_since = self._above_since or now
+                else:
+                    self._above_since = None
 
             above_for = int((now - self._above_since).total_seconds()) if self._above_since else 0
             below_for = int((now - self._below_since).total_seconds()) if self._below_since else 0
@@ -223,6 +242,7 @@ class SolarCatchCoordinator(DataUpdateCoordinator[SolarCatchState]):
             mode=mode,
             raw_power_w=raw_power,
             decision_power_w=decision_power,
+            appliance_power_w=appliance_power,
             runtime_today_min=self._runtime_today.total_seconds() / 60,
             remaining_runtime_min=remaining_runtime.total_seconds() / 60,
             latest_start_time=latest_start.strftime("%H:%M:%S"),

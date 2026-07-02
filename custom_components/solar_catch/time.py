@@ -16,8 +16,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     coordinator: SolarCatchCoordinator = hass.data[DOMAIN][entry.entry_id]
     async_add_entities(
         [
-            SolarCatchTime(coordinator, entry, CONF_START_TIME, "Start time"),
-            SolarCatchTime(coordinator, entry, CONF_END_TIME, "End time"),
+            SolarCatchTime(coordinator, entry, CONF_START_TIME, "Start"),
+            SolarCatchTime(coordinator, entry, CONF_END_TIME, "End"),
         ]
     )
 
