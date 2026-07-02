@@ -82,6 +82,17 @@ During setup/options, choose:
 - `sensor.solar_catch_below_threshold_for`
 - `sensor.solar_catch_latest_start_time`
 
+Installation through HACS as a custom repository
+1. Create a GitHub repository with this folder structure.
+2. In HACS, open the three-dot menu.
+3. Choose Custom repositories.
+4. Add the repository URL.
+5. Select category Integration.
+6. Install Solar Catch.
+7. Restart Home Assistant.
+8. Add the integration from Settings → Devices & services → Add integration → Solar Catch.
+
+
 ## Notes
 
 This is not a replacement for the hot-water cylinder thermostat, over-temperature protection, or a correctly rated contactor/relay.
