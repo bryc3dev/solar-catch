@@ -18,7 +18,7 @@ Basic control:
 - If decision power is above the start threshold for the configured above-threshold time, turn the appliance on.
 - Once the appliance is on, if decision power is below the start threshold for the configured below-threshold time, turn it off.
 - Below-threshold timing only starts while the appliance is on.
-- If the minimum daily runtime will not be reached by the end time, force the appliance on.
+- If Top Up is enabled and the minimum runtime will not be reached by the End Time, Solar Catch forces the appliance on.
 - Solar Catch will not start the appliance before the start time.
 
 When the appliance is already on, Solar Catch adds the appliance draw back onto the raw excess/import sensor to estimate the excess that existed before the appliance turned on.
@@ -61,47 +61,35 @@ During setup/options, choose:
 - Start: `09:00`
 - End: `17:00`
 
-## Entities created
+## Installation through HACS as a custom repository
 
-- `switch.solar_catch_enabled`
-- `number.solar_catch_fallback_draw`
-- `number.solar_catch_start_threshold`
-- `number.solar_catch_above_time`
-- `number.solar_catch_below_time`
-- `number.solar_catch_min_runtime`
-- `time.solar_catch_start`
-- `time.solar_catch_end`
-- `sensor.solar_catch_status`
-- `sensor.solar_catch_mode`
-- `sensor.solar_catch_runtime_today`
-- `sensor.solar_catch_remaining_runtime`
-- `sensor.solar_catch_raw_excess_power`
-- `sensor.solar_catch_decision_power`
-- `sensor.solar_catch_appliance_draw`
-- `sensor.solar_catch_above_threshold_for`
-- `sensor.solar_catch_below_threshold_for`
-- `sensor.solar_catch_latest_start_time`
-
-Installation through HACS as a custom repository
-1. Create a GitHub repository with this folder structure.
-2. In HACS, open the three-dot menu.
-3. Choose Custom repositories.
-4. Add the repository URL.
-5. Select category Integration.
-6. Install Solar Catch.
-7. Restart Home Assistant.
-8. Add the integration from Settings → Devices & services → Add integration → Solar Catch.
+1. In HACS, open the three-dot menu.
+2. Choose Custom repositories.
+3. Add the repository URL.
+4. Select category Integration.
+5. Install Solar Catch.
+6. Restart Home Assistant.
+7. Add the integration from Settings → Devices & services → Add integration → Solar Catch.
 
 
 ## Notes
 
 This is not a replacement for the hot-water cylinder thermostat, over-temperature protection, or a correctly rated contactor/relay.
 
-Version `0.1.2` changes:
-
+V0.1.2 changes
 - Added optional appliance power sensor mapping.
 - Uses live appliance draw for decision power when available.
 - Runtime counts active draw if appliance power sensor is mapped.
 - Below-threshold timer only runs while the appliance is on.
 - Shortened control entity names to improve the default device controls card.
 - Added setup/options descriptions explaining that the excess sensor must be positive on export.
+
+v0.1.3 changes
+- Added Top Up switch.
+- Off: only runs when excess power is above the threshold.
+- On: also forces a late run so the minimum runtime is reached by the end time.
+- Added Mode select. Auto/On/Off
+- The appliance can keep running on excess solar even after the minimum runtime has been reached.
+- Removed Raw Excess Power and Appliance Draw sensors from the entity list to reduce clutter.
+- Multiple Solar Catch instances are now allowed.
+
