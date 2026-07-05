@@ -6,34 +6,38 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import CONF_ENABLED, DOMAIN
+from .const import CONF_ENABLED, CONF_TOP_UP_ENABLED, DOMAIN
 from .coordinator import SolarCatchCoordinator
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities) -> None:
     coordinator: SolarCatchCoordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([SolarCatchEnableSwitch(coordinator, entry)])
+    async_add_entities([
+        SolarCatchSwitch(coordinator, entry, CONF_ENABLED, "Enabled"),
+        SolarCatchSwitch(coordinator, entry, CONF_TOP_UP_ENABLED, "Top Up"),
+    ])
 
 
-class SolarCatchEnableSwitch(CoordinatorEntity[SolarCatchCoordinator], SwitchEntity):
+class SolarCatchSwitch(CoordinatorEntity[SolarCatchCoordinator], SwitchEntity):
     _attr_has_entity_name = True
-    _attr_name = "Enabled"
 
-    def __init__(self, coordinator: SolarCatchCoordinator, entry: ConfigEntry) -> None:
+    def __init__(self, coordinator: SolarCatchCoordinator, entry: ConfigEntry, key: str, name: str) -> None:
         super().__init__(coordinator)
-        self._attr_unique_id = f"{entry.entry_id}_enabled"
+        self._key = key
+        self._attr_name = name
+        self._attr_unique_id = f"{entry.entry_id}_{key}"
         self._attr_device_info = {
             "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": "Solar Catch",
+            "name": entry.title or "Solar Catch",
             "manufacturer": "Solar Catch",
         }
 
     @property
     def is_on(self) -> bool:
-        return bool(self.coordinator.get_setting(CONF_ENABLED))
+        return bool(self.coordinator.get_setting(self._key))
 
     async def async_turn_on(self, **kwargs) -> None:
-        await self.coordinator.async_set_setting(CONF_ENABLED, True)
+        await self.coordinator.async_set_setting(self._key, True)
 
     async def async_turn_off(self, **kwargs) -> None:
-        await self.coordinator.async_set_setting(CONF_ENABLED, False)
+        await self.coordinator.async_set_setting(self._key, False)

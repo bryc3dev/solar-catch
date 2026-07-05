@@ -32,7 +32,7 @@ class SolarCatchTime(CoordinatorEntity[SolarCatchCoordinator], TimeEntity):
         self._attr_unique_id = f"{entry.entry_id}_{key}"
         self._attr_device_info = {
             "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": "Solar Catch",
+            "name": entry.title or "Solar Catch",
             "manufacturer": "Solar Catch",
         }
 

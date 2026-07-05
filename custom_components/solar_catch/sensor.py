@@ -19,12 +19,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             SolarCatchModeSensor(coordinator, entry),
             SolarCatchRuntimeSensor(coordinator, entry),
             SolarCatchRemainingRuntimeSensor(coordinator, entry),
-            SolarCatchRawPowerSensor(coordinator, entry),
+            SolarCatchLatestStartSensor(coordinator, entry),
             SolarCatchDecisionPowerSensor(coordinator, entry),
-            SolarCatchAppliancePowerSensor(coordinator, entry),
             SolarCatchAboveForSensor(coordinator, entry),
             SolarCatchBelowForSensor(coordinator, entry),
-            SolarCatchLatestStartSensor(coordinator, entry),
         ]
     )
 
@@ -39,7 +37,7 @@ class SolarCatchBaseSensor(CoordinatorEntity[SolarCatchCoordinator], SensorEntit
         self._attr_name = name
         self._attr_device_info = {
             "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": "Solar Catch",
+            "name": entry.title or "Solar Catch",
             "manufacturer": "Solar Catch",
         }
 
@@ -55,7 +53,7 @@ class SolarCatchStatusSensor(SolarCatchBaseSensor):
 
 class SolarCatchModeSensor(SolarCatchBaseSensor):
     def __init__(self, coordinator, entry):
-        super().__init__(coordinator, entry, "mode", "Mode")
+        super().__init__(coordinator, entry, "mode_sensor", "Mode status")
 
     @property
     def native_value(self):
@@ -85,18 +83,13 @@ class SolarCatchRemainingRuntimeSensor(SolarCatchBaseSensor):
         return round(self.coordinator.data.remaining_runtime_min, 1)
 
 
-class SolarCatchRawPowerSensor(SolarCatchBaseSensor):
-    _attr_native_unit_of_measurement = UnitOfPower.WATT
-    _attr_device_class = SensorDeviceClass.POWER
-    _attr_state_class = SensorStateClass.MEASUREMENT
-
+class SolarCatchLatestStartSensor(SolarCatchBaseSensor):
     def __init__(self, coordinator, entry):
-        super().__init__(coordinator, entry, "raw_power", "Raw excess power")
+        super().__init__(coordinator, entry, "latest_start", "Latest start time")
 
     @property
     def native_value(self):
-        value = self.coordinator.data.raw_power_w
-        return None if value is None else round(value, 0)
+        return self.coordinator.data.latest_start_time
 
 
 class SolarCatchDecisionPowerSensor(SolarCatchBaseSensor):
@@ -110,22 +103,6 @@ class SolarCatchDecisionPowerSensor(SolarCatchBaseSensor):
     @property
     def native_value(self):
         value = self.coordinator.data.decision_power_w
-        return None if value is None else round(value, 0)
-
-
-
-
-class SolarCatchAppliancePowerSensor(SolarCatchBaseSensor):
-    _attr_native_unit_of_measurement = UnitOfPower.WATT
-    _attr_device_class = SensorDeviceClass.POWER
-    _attr_state_class = SensorStateClass.MEASUREMENT
-
-    def __init__(self, coordinator, entry):
-        super().__init__(coordinator, entry, "appliance_power", "Appliance draw")
-
-    @property
-    def native_value(self):
-        value = self.coordinator.data.appliance_power_w
         return None if value is None else round(value, 0)
 
 
@@ -149,12 +126,3 @@ class SolarCatchBelowForSensor(SolarCatchBaseSensor):
     @property
     def native_value(self):
         return self.coordinator.data.below_for_s
-
-
-class SolarCatchLatestStartSensor(SolarCatchBaseSensor):
-    def __init__(self, coordinator, entry):
-        super().__init__(coordinator, entry, "latest_start", "Latest start time")
-
-    @property
-    def native_value(self):
-        return self.coordinator.data.latest_start_time

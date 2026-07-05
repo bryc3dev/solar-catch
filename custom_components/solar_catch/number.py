@@ -19,11 +19,11 @@ from .coordinator import SolarCatchCoordinator
 
 
 NUMBER_DESCRIPTIONS = [
-    (CONF_APPLIANCE_POWER_W, "Fallback draw", UnitOfPower.WATT, 0, 20000, 50),
     (CONF_START_THRESHOLD_W, "Start threshold", UnitOfPower.WATT, -10000, 20000, 50),
     (CONF_ABOVE_THRESHOLD_SECONDS, "Above time", "s", 0, 3600, 10),
     (CONF_BELOW_THRESHOLD_SECONDS, "Below time", "s", 0, 3600, 10),
     (CONF_MIN_RUNTIME_MINUTES, "Min runtime", UnitOfTime.MINUTES, 0, 720, 5),
+    (CONF_APPLIANCE_POWER_W, "Fallback draw", UnitOfPower.WATT, 0, 20000, 50),
 ]
 
 
@@ -47,7 +47,7 @@ class SolarCatchNumber(CoordinatorEntity[SolarCatchCoordinator], NumberEntity):
         self._attr_native_step = step
         self._attr_device_info = {
             "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": "Solar Catch",
+            "name": entry.title or "Solar Catch",
             "manufacturer": "Solar Catch",
         }
 

@@ -17,14 +17,19 @@ from .const import (
     CONF_APPLIANCE_POWER_W,
     CONF_APPLIANCE_SWITCH,
     CONF_BELOW_THRESHOLD_SECONDS,
+    CONF_CONTROL_MODE,
     CONF_ENABLED,
     CONF_END_TIME,
     CONF_MIN_RUNTIME_MINUTES,
     CONF_POWER_ENTITY,
     CONF_START_THRESHOLD_W,
     CONF_START_TIME,
+    CONF_TOP_UP_ENABLED,
     DEFAULTS,
     DOMAIN,
+    MODE_AUTO,
+    MODE_FORCE_OFF,
+    MODE_FORCE_ON,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -47,10 +52,12 @@ class SolarCatchState:
     above_for_s: int = 0
     below_for_s: int = 0
     enabled: bool = True
+    top_up_enabled: bool = True
+    control_mode: str = MODE_AUTO
 
 
 class SolarCatchCoordinator(DataUpdateCoordinator[SolarCatchState]):
-    """Simple hot-water/excess-power controller."""
+    """Simple excess-power appliance controller."""
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         self.entry = entry
@@ -61,7 +68,11 @@ class SolarCatchCoordinator(DataUpdateCoordinator[SolarCatchState]):
         self._above_since: datetime | None = None
         self._below_since: datetime | None = None
         self._last_controlled_action: str | None = None
-        self._state = SolarCatchState(enabled=bool(self.settings.get(CONF_ENABLED, True)))
+        self._state = SolarCatchState(
+            enabled=bool(self.settings.get(CONF_ENABLED, True)),
+            top_up_enabled=bool(self.settings.get(CONF_TOP_UP_ENABLED, True)),
+            control_mode=str(self.settings.get(CONF_CONTROL_MODE, MODE_AUTO)),
+        )
 
         super().__init__(
             hass,
@@ -145,6 +156,8 @@ class SolarCatchCoordinator(DataUpdateCoordinator[SolarCatchState]):
             self._below_since = None
 
         enabled = bool(self.get_setting(CONF_ENABLED))
+        top_up_enabled = bool(self.get_setting(CONF_TOP_UP_ENABLED))
+        control_mode = str(self.get_setting(CONF_CONTROL_MODE) or MODE_AUTO)
         appliance_on = self._switch_is_on()
 
         raw_power = self._read_power_w(self.get_setting(CONF_POWER_ENTITY))
@@ -174,33 +187,59 @@ class SolarCatchCoordinator(DataUpdateCoordinator[SolarCatchState]):
         latest_start = end_dt - remaining_runtime
         in_window = start_dt <= now <= end_dt
         can_start = now >= start_dt
-        force_run = enabled and can_start and remaining_runtime > timedelta() and now >= latest_start
-        complete = self._runtime_today >= target_runtime
+        force_top_up = top_up_enabled and can_start and remaining_runtime > timedelta() and now >= latest_start
 
         # If the appliance is already on, raw grid/export power includes its draw.
-        # Add the configured appliance draw back in so threshold decisions use
-        # the estimated excess that existed before/without the appliance.
+        # Add the appliance draw back in so threshold decisions use estimated
+        # excess before/without the appliance.
         decision_power = None if raw_power is None else raw_power + (appliance_power if appliance_on else 0.0)
 
-        if decision_power is None:
+        above_for = 0
+        below_for = 0
+        status = "Starting"
+        mode = "startup"
+
+        if not enabled:
+            self._above_since = None
+            self._below_since = None
+            status = "Disabled"
+            mode = "disabled"
+        elif control_mode == MODE_FORCE_ON:
+            self._above_since = None
+            self._below_since = None
+            status = "Mode: Force On"
+            mode = "force_on"
+            await self._turn_on("mode force on")
+        elif control_mode == MODE_FORCE_OFF:
+            self._above_since = None
+            self._below_since = None
+            status = "Mode: Force Off"
+            mode = "force_off"
+            await self._turn_off("mode force off")
+        elif decision_power is None:
             self._above_since = None
             self._below_since = None
             status = "Power sensor unavailable"
             mode = "sensor_unavailable"
         else:
+            solar_available = decision_power >= threshold
+
             # Above-threshold timing is used to start the appliance while off.
-            # Below-threshold timing is only meaningful once the appliance is on;
-            # otherwise it just counts forever while waiting and clutters the UI.
+            # Below-threshold timing is only meaningful once the appliance is on,
+            # and is ignored during required top-up time.
             if appliance_on:
-                if decision_power >= threshold:
+                if solar_available:
                     self._above_since = self._above_since or now
+                    self._below_since = None
+                elif force_top_up:
+                    self._above_since = None
                     self._below_since = None
                 else:
                     self._below_since = self._below_since or now
                     self._above_since = None
             else:
                 self._below_since = None
-                if decision_power >= threshold:
+                if solar_available:
                     self._above_since = self._above_since or now
                 else:
                     self._above_since = None
@@ -208,20 +247,16 @@ class SolarCatchCoordinator(DataUpdateCoordinator[SolarCatchState]):
             above_for = int((now - self._above_since).total_seconds()) if self._above_since else 0
             below_for = int((now - self._below_since).total_seconds()) if self._below_since else 0
 
-            if not enabled:
-                status = "Disabled"
-                mode = "disabled"
-            elif complete:
-                status = f"Complete: runtime {self._runtime_today.total_seconds()/60:.0f} min reached"
-                mode = "complete"
-                await self._turn_off("daily minimum runtime reached")
-            elif not can_start:
+            if not can_start:
                 status = f"Waiting for start time {start_time.strftime('%H:%M')}"
                 mode = "before_start"
-            elif force_run:
-                status = f"Forced run: {remaining_runtime.total_seconds()/60:.0f} min remaining before end time"
-                mode = "forced_run"
-                await self._turn_on("latest start time reached")
+            elif force_top_up:
+                status = f"Top-up running: {remaining_runtime.total_seconds()/60:.0f} min remaining before end"
+                mode = "top_up"
+                await self._turn_on("top-up latest start time reached")
+            elif appliance_on and solar_available:
+                status = f"Solar running: decision power {decision_power:.0f}W >= {threshold:.0f}W"
+                mode = "solar_running"
             elif appliance_on and below_for >= below_seconds:
                 status = f"Below threshold for {below_for}s; turning off"
                 mode = "below_threshold"
@@ -231,8 +266,8 @@ class SolarCatchCoordinator(DataUpdateCoordinator[SolarCatchState]):
                 mode = "above_threshold"
                 await self._turn_on("above threshold timer elapsed")
             elif appliance_on:
-                status = f"Running: decision power {decision_power:.0f}W, runtime {self._runtime_today.total_seconds()/60:.0f} min"
-                mode = "running"
+                status = f"Running: below threshold for {below_for}s"
+                mode = "running_below_threshold"
             else:
                 status = f"Waiting: decision power {decision_power:.0f}W / threshold {threshold:.0f}W"
                 mode = "waiting"
@@ -246,9 +281,11 @@ class SolarCatchCoordinator(DataUpdateCoordinator[SolarCatchState]):
             runtime_today_min=self._runtime_today.total_seconds() / 60,
             remaining_runtime_min=remaining_runtime.total_seconds() / 60,
             latest_start_time=latest_start.strftime("%H:%M:%S"),
-            above_for_s=int((now - self._above_since).total_seconds()) if self._above_since else 0,
-            below_for_s=int((now - self._below_since).total_seconds()) if self._below_since else 0,
+            above_for_s=above_for,
+            below_for_s=below_for,
             enabled=enabled,
+            top_up_enabled=top_up_enabled,
+            control_mode=control_mode,
         )
         self._state = state
         return state
