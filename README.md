@@ -93,3 +93,10 @@ v0.1.3 changes
 - Removed Raw Excess Power and Appliance Draw sensors from the entity list to reduce clutter.
 - Multiple Solar Catch instances are now allowed.
 
+v0.1.6 changes
+- Runtime is now always counted from switch on-time.
+- This suits hot water cylinders where the thermostat may stop element draw once the tank is hot.
+- The appliance power sensor is still used for decision-power correction if mapped, but not runtime counting.
+- Removed the Mode selector.
+- Added a simple Boost switch.
+
