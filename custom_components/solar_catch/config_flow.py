@@ -13,18 +13,13 @@ from .const import (
     CONF_APPLIANCE_POWER_W,
     CONF_APPLIANCE_SWITCH,
     CONF_BELOW_THRESHOLD_SECONDS,
-    CONF_CONTROL_MODE,
-    CONF_ENABLED,
     CONF_END_TIME,
     CONF_MIN_RUNTIME_MINUTES,
     CONF_POWER_ENTITY,
     CONF_START_THRESHOLD_W,
     CONF_START_TIME,
-    CONF_TOP_UP_ENABLED,
     DEFAULTS,
     DOMAIN,
-    MODE_LABELS,
-    MODE_OPTIONS,
 )
 
 
@@ -57,23 +52,8 @@ def _schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
         ),
         vol.Required(CONF_START_TIME, default=str(defaults[CONF_START_TIME])): selector.TimeSelector(),
         vol.Required(CONF_END_TIME, default=str(defaults[CONF_END_TIME])): selector.TimeSelector(),
-        vol.Required(CONF_ENABLED, default=bool(defaults[CONF_ENABLED])): selector.BooleanSelector(),
-        vol.Required(CONF_TOP_UP_ENABLED, default=bool(defaults[CONF_TOP_UP_ENABLED])): selector.BooleanSelector(),
-        vol.Required(CONF_CONTROL_MODE, default=str(defaults[CONF_CONTROL_MODE])): selector.SelectSelector(
-            selector.SelectSelectorConfig(options=[MODE_LABELS[o] for o in MODE_OPTIONS], mode=selector.SelectSelectorMode.DROPDOWN)
-        ),
     }
     return vol.Schema(schema)
-
-
-def _normalize_user_input(user_input: dict[str, Any]) -> dict[str, Any]:
-    data = dict(user_input)
-    # The select in the options/config form displays friendly labels. Store the raw mode key.
-    label_to_mode = {v: k for k, v in MODE_LABELS.items()}
-    mode = data.get(CONF_CONTROL_MODE)
-    if mode in label_to_mode:
-        data[CONF_CONTROL_MODE] = label_to_mode[mode]
-    return data
 
 
 class SolarCatchConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -83,7 +63,7 @@ class SolarCatchConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None):
         if user_input is not None:
-            data = _normalize_user_input(user_input)
+            data = dict(user_input)
             title = "Solar Catch"
             switch = data.get(CONF_APPLIANCE_SWITCH)
             if switch:
@@ -102,8 +82,6 @@ class SolarCatchOptionsFlow(config_entries.OptionsFlow):
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         if user_input is not None:
-            return self.async_create_entry(title="", data=_normalize_user_input(user_input))
+            return self.async_create_entry(title="", data=dict(user_input))
         defaults = {**self.config_entry.data, **self.config_entry.options}
-        # Show a friendly label for mode in the options form.
-        defaults[CONF_CONTROL_MODE] = MODE_LABELS.get(defaults.get(CONF_CONTROL_MODE), MODE_LABELS[MODE_OPTIONS[0]])
         return self.async_show_form(step_id="init", data_schema=_schema(defaults))

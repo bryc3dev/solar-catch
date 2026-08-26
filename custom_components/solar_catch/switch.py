@@ -6,7 +6,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import CONF_ENABLED, CONF_TOP_UP_ENABLED, DOMAIN
+from .const import CONF_BOOST_ENABLED, CONF_ENABLED, CONF_TOP_UP_ENABLED, DOMAIN
 from .coordinator import SolarCatchCoordinator
 
 
@@ -15,6 +15,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     async_add_entities([
         SolarCatchSwitch(coordinator, entry, CONF_ENABLED, "Enabled"),
         SolarCatchSwitch(coordinator, entry, CONF_TOP_UP_ENABLED, "Top Up"),
+        SolarCatchSwitch(coordinator, entry, CONF_BOOST_ENABLED, "Boost"),
     ])
 
 

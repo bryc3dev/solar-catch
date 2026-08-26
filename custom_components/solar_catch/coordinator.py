@@ -17,7 +17,7 @@ from .const import (
     CONF_APPLIANCE_POWER_W,
     CONF_APPLIANCE_SWITCH,
     CONF_BELOW_THRESHOLD_SECONDS,
-    CONF_CONTROL_MODE,
+    CONF_BOOST_ENABLED,
     CONF_ENABLED,
     CONF_END_TIME,
     CONF_MIN_RUNTIME_MINUTES,
@@ -27,9 +27,6 @@ from .const import (
     CONF_TOP_UP_ENABLED,
     DEFAULTS,
     DOMAIN,
-    MODE_AUTO,
-    MODE_FORCE_OFF,
-    MODE_FORCE_ON,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -53,7 +50,7 @@ class SolarCatchState:
     below_for_s: int = 0
     enabled: bool = True
     top_up_enabled: bool = True
-    control_mode: str = MODE_AUTO
+    boost_enabled: bool = False
 
 
 class SolarCatchCoordinator(DataUpdateCoordinator[SolarCatchState]):
@@ -71,7 +68,7 @@ class SolarCatchCoordinator(DataUpdateCoordinator[SolarCatchState]):
         self._state = SolarCatchState(
             enabled=bool(self.settings.get(CONF_ENABLED, True)),
             top_up_enabled=bool(self.settings.get(CONF_TOP_UP_ENABLED, True)),
-            control_mode=str(self.settings.get(CONF_CONTROL_MODE, MODE_AUTO)),
+            boost_enabled=bool(self.settings.get(CONF_BOOST_ENABLED, False)),
         )
 
         super().__init__(
@@ -157,7 +154,7 @@ class SolarCatchCoordinator(DataUpdateCoordinator[SolarCatchState]):
 
         enabled = bool(self.get_setting(CONF_ENABLED))
         top_up_enabled = bool(self.get_setting(CONF_TOP_UP_ENABLED))
-        control_mode = str(self.get_setting(CONF_CONTROL_MODE) or MODE_AUTO)
+        boost_enabled = bool(self.get_setting(CONF_BOOST_ENABLED))
         appliance_on = self._switch_is_on()
 
         raw_power = self._read_power_w(self.get_setting(CONF_POWER_ENTITY))
@@ -165,10 +162,10 @@ class SolarCatchCoordinator(DataUpdateCoordinator[SolarCatchState]):
         fallback_appliance_power = float(self.get_setting(CONF_APPLIANCE_POWER_W) or 0)
         appliance_power = measured_appliance_power if measured_appliance_power is not None else fallback_appliance_power
 
-        # Runtime is counted while the controlled switch is on. If a live appliance
-        # power sensor is mapped, only count active draw so thermostat cycling or
-        # variable-load behaviour does not over-count useful runtime.
-        if appliance_on and (measured_appliance_power is None or measured_appliance_power > 50):
+        # Runtime is counted from switch on-time. For hot water this is the
+        # useful control runtime: the thermostat may stop drawing power once hot,
+        # but the cylinder has still been given available heating time.
+        if appliance_on:
             self._runtime_today += delta
 
         threshold = float(self.get_setting(CONF_START_THRESHOLD_W) or 0)
@@ -202,20 +199,15 @@ class SolarCatchCoordinator(DataUpdateCoordinator[SolarCatchState]):
         if not enabled:
             self._above_since = None
             self._below_since = None
-            status = "Disabled"
+            status = "Disabled; appliance off"
             mode = "disabled"
-        elif control_mode == MODE_FORCE_ON:
+            await self._turn_off("controller disabled")
+        elif boost_enabled:
             self._above_since = None
             self._below_since = None
-            status = "Mode: Force On"
-            mode = "force_on"
-            await self._turn_on("mode force on")
-        elif control_mode == MODE_FORCE_OFF:
-            self._above_since = None
-            self._below_since = None
-            status = "Mode: Force Off"
-            mode = "force_off"
-            await self._turn_off("mode force off")
+            status = "Boost on: appliance forced on"
+            mode = "boost"
+            await self._turn_on("boost enabled")
         elif decision_power is None:
             self._above_since = None
             self._below_since = None
@@ -285,7 +277,7 @@ class SolarCatchCoordinator(DataUpdateCoordinator[SolarCatchState]):
             below_for_s=below_for,
             enabled=enabled,
             top_up_enabled=top_up_enabled,
-            control_mode=control_mode,
+            boost_enabled=boost_enabled,
         )
         self._state = state
         return state

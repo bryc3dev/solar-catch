@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Solar Catch setup",
-        "description": "Select the excess-power sensor and the appliance switch, then set the basic control values.",
+        "description": "Select the excess-power sensor and appliance switch, then set the basic control values.",
         "data": {
           "power_entity": "Excess power sensor",
           "appliance_switch": "Appliance switch",
@@ -14,17 +14,12 @@
           "below_threshold_seconds": "Below threshold time",
           "min_runtime_minutes": "Minimum daily runtime",
           "start_time": "Start time",
-          "end_time": "End time",
-          "enabled": "Enabled",
-          "top_up_enabled": "Top Up",
-          "control_mode": "Mode"
+          "end_time": "End time"
         },
         "data_description": {
           "power_entity": "Must read positive when exporting/excess power is available, and negative when importing. Create an inverted template sensor if your meter is the opposite sign.",
-          "appliance_power_entity": "Optional live power draw sensor for the controlled appliance. If supplied, Solar Catch uses this instead of the fixed fallback draw while the appliance is on.",
-          "appliance_power_w": "Used only when no live appliance power sensor is selected, or if that sensor is unavailable.",
-          "top_up_enabled": "When off, Solar Catch only runs on excess solar. When on, it also forces a late top-up so the minimum runtime is reached by the end time.",
-          "control_mode": "Auto follows Solar Catch logic. Force On turns the appliance on regardless. Force Off turns the appliance off regardless."
+          "appliance_power_entity": "Optional live power draw sensor for the controlled appliance. If supplied, Solar Catch uses this for decision-power correction while the appliance is on. Runtime is still counted from switch on-time.",
+          "appliance_power_w": "Used when no live appliance power sensor is selected, or if that sensor is unavailable."
         }
       }
     }
@@ -44,17 +39,12 @@
           "below_threshold_seconds": "Below threshold time",
           "min_runtime_minutes": "Minimum daily runtime",
           "start_time": "Start time",
-          "end_time": "End time",
-          "enabled": "Enabled",
-          "top_up_enabled": "Top Up",
-          "control_mode": "Mode"
+          "end_time": "End time"
         },
         "data_description": {
           "power_entity": "Must read positive when exporting/excess power is available, and negative when importing. Create an inverted template sensor if your meter is the opposite sign.",
-          "appliance_power_entity": "Optional live power draw sensor for the controlled appliance. If supplied, Solar Catch uses this instead of the fixed fallback draw while the appliance is on.",
-          "appliance_power_w": "Used only when no live appliance power sensor is selected, or if that sensor is unavailable.",
-          "top_up_enabled": "When off, Solar Catch only runs on excess solar. When on, it also forces a late top-up so the minimum runtime is reached by the end time.",
-          "control_mode": "Auto follows Solar Catch logic. Force On turns the appliance on regardless. Force Off turns the appliance off regardless."
+          "appliance_power_entity": "Optional live power draw sensor for the controlled appliance. If supplied, Solar Catch uses this for decision-power correction while the appliance is on. Runtime is still counted from switch on-time.",
+          "appliance_power_w": "Used when no live appliance power sensor is selected, or if that sensor is unavailable."
         }
       }
     }
